@@ -1,0 +1,9 @@
+apply plugin: 'java-library'
+ext.publish_artifact_id = 'constructors-constraints-annotations'
+apply from: "$rootDir/publish.gradle"
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
+}

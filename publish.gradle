@@ -1,0 +1,30 @@
+apply from: file("$rootDir/version.gradle")
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        library(MavenPublication) {
+            groupId 'pl.selvin.apt'
+            version publish_version
+            artifactId publish_artifact_id
+            afterEvaluate {
+                from components.java
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url "file://$rootDir/build/maven"
+        }
+        if(System.getenv("GITHUB_ACTOR") != null)
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/selvinpl/syncframeworkandroid"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
