@@ -20,7 +20,7 @@ publishing {
         if(System.getenv("GITHUB_ACTOR") != null)
         maven {
             name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/selvinpl/syncframeworkandroid"
+            url = "https://maven.pkg.github.com/selvinpl/constructorsconstraints"
             credentials {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
