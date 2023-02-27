@@ -3,6 +3,7 @@ package pl.selvin.apt.constructorsconstraints.processor;
 import com.sun.tools.javac.code.Attribute;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,22 +56,43 @@ public class ConstructorConstraintProcessor extends AbstractProcessor {
 	private void processConstructorConstraintClasses(final RoundEnvironment env, final TypeElement type) {
 		final Element constructorConstraintElement = processingEnv.getElementUtils().getTypeElement(ConstructorConstraint.class.getName());
 		final TypeMirror constructorConstraintType = constructorConstraintElement.asType();
-		final ArrayList<String> constructorConstraints = new ArrayList<>();
+		final HashMap<String, ArrayList<String>> constructorConstraints = new HashMap<>();
+		final ArrayList<Element> elements = new ArrayList<>();
 		for (final Element element : env.getElementsAnnotatedWith(type)) {
+			elements.add(element);
 			for (AnnotationMirror am : element.getAnnotationMirrors()) {
 				if (am.getAnnotationType().equals(constructorConstraintType)) {
 					for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : am.getElementValues().entrySet()) {
 						if ("arguments".equals(entry.getKey().getSimpleName().toString()) && entry.getValue() instanceof Attribute.Array) {
 							final Attribute.Array array = (Attribute.Array) entry.getValue();
 							for (final Attribute a : array.values) {
-								constructorConstraints.add(a.getValue().toString());
+								final String className = element.toString();
+								final ArrayList<String> arguments;
+								if(constructorConstraints.containsKey(className)) {
+									arguments = constructorConstraints.get(className);
+								} else {
+									arguments = new ArrayList<>();
+									constructorConstraints.put(className, arguments);
+								}
+								arguments.add(a.getValue().toString());
 							}
 						}
 					}
 					break;
 				}
 			}
-			processClass(element, constructorConstraints);
+		}
+		for (Element element : elements) {
+			final TypeMirror derived = element.asType();
+			for (String className : constructorConstraints.keySet()) {
+				final TypeMirror baseType = processingEnv.getElementUtils().getTypeElement(className).asType();
+				if(derived.equals(baseType)) {
+					continue;
+				}
+				if(processingEnv.getTypeUtils().isAssignable(derived, baseType)) {
+					processClass(element, constructorConstraints.get(className));
+				}
+			}
 		}
 	}
 
