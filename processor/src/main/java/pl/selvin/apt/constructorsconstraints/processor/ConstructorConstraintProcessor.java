@@ -4,6 +4,7 @@ import com.sun.tools.javac.code.Attribute;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,6 +95,13 @@ public class ConstructorConstraintProcessor extends AbstractProcessor {
 				}
 			}
 		}
+	}
+
+	@Override
+	public Set<String> getSupportedOptions() {
+		Set<String> allSupportedOptions = new HashSet<>(super.getSupportedOptions());
+		allSupportedOptions.add("org.gradle.annotation.processing.isolating");
+		return allSupportedOptions;
 	}
 
 	private void processClass(Element element, ArrayList<String> arguments) {
