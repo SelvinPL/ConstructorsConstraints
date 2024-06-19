@@ -46,6 +46,7 @@ jobs:
     - name: Pushes to maven repository
       run: |
         cd build/maven
+        git config --unset-all http.https://github.com/.extraheader
         git config --global user.name '${{ secrets.USER }}' 
         git config --global user.email '${{ secrets.EMAIL }}'
         git add --all
