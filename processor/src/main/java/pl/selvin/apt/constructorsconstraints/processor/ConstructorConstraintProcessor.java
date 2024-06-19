@@ -24,7 +24,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
-import javax.lang.model.util.SimpleTypeVisitor7;
+import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.tools.Diagnostic;
 
 import pl.selvin.apt.constructorsconstraints.annotations.ConstructorConstraint;
@@ -33,7 +33,7 @@ import pl.selvin.apt.constructorsconstraints.annotations.ConstructorConstraint;
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class ConstructorConstraintProcessor extends AbstractProcessor {
 	private static final TypeVisitor<Boolean, ArrayList<String>> constraintArgsVisitor =
-			new SimpleTypeVisitor7<Boolean, ArrayList<String>>() {
+			new SimpleTypeVisitor8<Boolean, ArrayList<String>>() {
 				public Boolean visitExecutable(ExecutableType t, ArrayList<String> args) {
 					final List<? extends TypeMirror> types = t.getParameterTypes();
 					if (args.size() != types.size()) {
@@ -65,11 +65,12 @@ public class ConstructorConstraintProcessor extends AbstractProcessor {
 				if (am.getAnnotationType().equals(constructorConstraintType)) {
 					for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : am.getElementValues().entrySet()) {
 						if ("arguments".equals(entry.getKey().getSimpleName().toString()) && entry.getValue() instanceof Attribute.Array) {
+							//noinspection PatternVariableCanBeUsed
 							final Attribute.Array array = (Attribute.Array) entry.getValue();
 							for (final Attribute a : array.values) {
 								final String className = element.toString();
 								final ArrayList<String> arguments;
-								if(constructorConstraints.containsKey(className)) {
+								if (constructorConstraints.containsKey(className)) {
 									arguments = constructorConstraints.get(className);
 								} else {
 									arguments = new ArrayList<>();
@@ -87,27 +88,20 @@ public class ConstructorConstraintProcessor extends AbstractProcessor {
 			final TypeMirror derived = element.asType();
 			for (String className : constructorConstraints.keySet()) {
 				final TypeMirror baseType = processingEnv.getElementUtils().getTypeElement(className).asType();
-				if(derived.equals(baseType)) {
+				if (derived.equals(baseType)) {
 					continue;
 				}
-				if(processingEnv.getTypeUtils().isAssignable(derived, baseType)) {
+				if (processingEnv.getTypeUtils().isAssignable(derived, baseType)) {
 					processClass(element, constructorConstraints.get(className));
 				}
 			}
 		}
 	}
 
-	@Override
-	public Set<String> getSupportedOptions() {
-		Set<String> allSupportedOptions = new HashSet<>(super.getSupportedOptions());
-		allSupportedOptions.add("org.gradle.annotation.processing.isolating");
-		return allSupportedOptions;
-	}
-
 	private void processClass(Element element, ArrayList<String> arguments) {
 		if (!doesClassContainConstructorWithConstraint(element, arguments)) {
 			final String needs;
-			if (arguments == null || arguments.size() == 0) {
+			if (arguments == null || arguments.isEmpty()) {
 				needs = "a no-args constructor";
 			} else {
 				needs = "a constructor with arguments: (" + String.join(", ", arguments) + ")";

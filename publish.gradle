@@ -1,5 +1,5 @@
-apply from: file("$rootDir/version.gradle")
 apply plugin: 'maven-publish'
+apply from: file("$rootDir/version.gradle")
 
 publishing {
     publications {
