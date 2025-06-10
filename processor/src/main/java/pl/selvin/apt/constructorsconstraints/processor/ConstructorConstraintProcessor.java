@@ -60,7 +60,14 @@ public class ConstructorConstraintProcessor extends AbstractProcessor {
 		return stringBuilder.toString();
 	}
 
-	private record Pair<T1, T2>(T1 first, T2 second) {
+	@SuppressWarnings("ClassCanBeRecord")
+	private static final class Pair<T1,T2> {
+		public final T1 first;
+		public final T2 second;
+		public Pair(T1 first, T2 second) {
+			this.first = first;
+			this.second = second;
+		}
 	}
 
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
