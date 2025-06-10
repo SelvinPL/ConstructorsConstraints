@@ -4,7 +4,6 @@ import com.sun.tools.javac.code.Attribute;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,20 +31,37 @@ import pl.selvin.apt.constructorsconstraints.annotations.ConstructorConstraint;
 @SupportedAnnotationTypes("pl.selvin.apt.constructorsconstraints.annotations.ConstructorConstraint")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class ConstructorConstraintProcessor extends AbstractProcessor {
-	private static final TypeVisitor<Boolean, ArrayList<String>> constraintArgsVisitor =
-			new SimpleTypeVisitor8<Boolean, ArrayList<String>>() {
-				public Boolean visitExecutable(ExecutableType t, ArrayList<String> args) {
+	private static final TypeVisitor<Pair<Boolean, String>, ArrayList<String>> constraintArgsVisitor =
+			new SimpleTypeVisitor8<>() {
+				public Pair<Boolean, String> visitExecutable(ExecutableType t, ArrayList<String> args) {
 					final List<? extends TypeMirror> types = t.getParameterTypes();
 					if (args.size() != types.size()) {
-						return false;
+						return new Pair<>(false, typeMirrorListToString(types));
 					}
 					for (int i = 0; i < args.size(); i++) {
-						if (!args.get(i).equals(types.get(i).toString()))
-							return false;
+						if (!args.get(i).equals(types.get(i).toString())) {
+							return new Pair<>(false, typeMirrorListToString(types));
+						}
 					}
-					return true;
+					return new Pair<>(true, null);
 				}
 			};
+	private static String typeMirrorListToString(final List<? extends TypeMirror> types) {
+		final StringBuilder stringBuilder = new StringBuilder();
+		boolean addComma = false;
+		for (TypeMirror type: types) {
+			if(addComma) {
+				stringBuilder.append(", ");
+			} else {
+				addComma = true;
+			}
+			stringBuilder.append(type.toString());
+		}
+		return stringBuilder.toString();
+	}
+
+	private record Pair<T1, T2>(T1 first, T2 second) {
+	}
 
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
 		for (final TypeElement type : annotations) {
@@ -99,25 +115,28 @@ public class ConstructorConstraintProcessor extends AbstractProcessor {
 	}
 
 	private void processClass(Element element, ArrayList<String> arguments) {
-		if (!doesClassContainConstructorWithConstraint(element, arguments)) {
+		final Pair<Boolean, String> result = doesClassContainConstructorWithConstraint(element, arguments);
+		if (!result.first) {
 			final String needs;
 			if (arguments == null || arguments.isEmpty()) {
 				needs = "a no-args constructor";
 			} else {
-				needs = "a constructor with arguments: (" + String.join(", ", arguments) + ")";
+				needs = "a constructor with arguments: (" + String.join(", ", arguments) + ")\nLast found: " + result.second;
 			}
 			processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Class " + element + " needs " + needs, element);
 		}
 	}
 
-	private boolean doesClassContainConstructorWithConstraint(Element element, ArrayList<String> arguments) {
+	private Pair<Boolean, String> doesClassContainConstructorWithConstraint(Element element, ArrayList<String> arguments) {
+		Pair<Boolean, String> result = new Pair<>(false, null);
 		for (final Element subElement : element.getEnclosedElements()) {
 			if (subElement.getKind() == ElementKind.CONSTRUCTOR && subElement.getModifiers().contains(Modifier.PUBLIC)) {
 				final TypeMirror mirror = subElement.asType();
-				if (mirror.accept(constraintArgsVisitor, arguments))
-					return true;
+				result = mirror.accept(constraintArgsVisitor, arguments);
+				if (result.first)
+					return result;
 			}
 		}
-		return false;
+		return result;
 	}
 }
